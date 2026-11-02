@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ZEN LIVE HEARTS TOP 10</title>
+<style>
+:root{--pink:#f34acb;--violet:#a52cff;--panel:rgba(18,7,31,.92)}
+*{box-sizing:border-box}html,body{margin:0;width:100%;min-height:100%;background:transparent;font-family:Tahoma,Arial,sans-serif;color:#fff}
+.wrap{width:min(100%,920px);padding:7px;margin:0 auto}.card{padding:10px 16px 13px;border:2px solid #b52cff;border-radius:19px;background:linear-gradient(110deg,rgba(14,5,29,.94),rgba(18,7,35,.90));box-shadow:0 0 10px #a000ff,0 0 23px #8a20ff,inset 0 0 15px rgba(175,35,255,.16);overflow:hidden;position:relative}.card:before{content:"";position:absolute;inset:4px;border:1px solid rgba(240,90,255,.45);border-radius:14px;pointer-events:none}
+.goal{position:relative;z-index:1;margin:0 auto 7px;width:max-content;max-width:100%;padding:4px 12px;border:1px solid #d45aff;border-radius:10px;background:rgba(35,10,55,.8);font-size:clamp(17px,3vw,29px);font-weight:800;text-align:center;text-shadow:0 0 9px #d64cff;white-space:nowrap}.goal button{border:0;background:transparent;color:#fff;font-size:.75em;cursor:pointer;margin-left:5px}
+.row{display:flex;align-items:center;gap:clamp(10px,2.5vw,22px);position:relative;z-index:1;padding:0 5px}.heart{font-size:clamp(50px,7.5vw,82px);line-height:1;color:#ff42c8;filter:drop-shadow(0 0 7px #ff35db) drop-shadow(0 0 16px #a900ff);animation:pulse 1.5s infinite ease-in-out}@keyframes pulse{50%{transform:scale(1.06)}}
+.count{font-size:clamp(27px,5.4vw,60px);font-weight:900;text-shadow:0 0 10px rgba(230,90,255,.45);white-space:nowrap}.slash{color:#d8c5e8;font-weight:500;padding:0 6px}.bar{height:15px;margin:8px 3px 0;border:2px solid #a94ce3;border-radius:30px;background:rgba(255,255,255,.07);overflow:hidden;position:relative;z-index:1}.fill{height:100%;width:0%;border-radius:30px;background:repeating-linear-gradient(125deg,#f9a2ff 0 12px,#e43cff 12px 24px);box-shadow:0 0 12px #ed42ff;transition:width .25s}
+#result{display:none;position:relative;z-index:2;margin-top:10px;padding:10px;border:1px solid #d34cff;border-radius:13px;background:rgba(10,3,20,.97);box-shadow:0 0 15px #8d20ff}#result h3{margin:0 0 7px;text-align:center;color:#f49aff;font-size:18px}#winner{font-size:clamp(22px,4vw,34px);font-weight:900;text-align:center;color:#fff;text-shadow:0 0 12px #e52cff;margin:5px 0 9px}.sub{font-size:12px;text-align:center;color:#d8c6e8;margin-bottom:7px}.toplist{display:grid;grid-template-columns:1fr 1fr;gap:4px 10px;font-size:13px}.entry{display:flex;justify-content:space-between;gap:8px;padding:4px 7px;border-radius:6px;background:rgba(150,60,200,.15)}.entry b{color:#f18aff}.actions{text-align:center;margin-top:9px}.actions button{border:1px solid #d85cff;border-radius:8px;background:#32104c;color:white;padding:6px 13px;font-weight:bold;cursor:pointer;margin:0 3px}.note{font-size:10px;color:#c8b3d6;text-align:center;margin-top:6px}.testbar{position:relative;z-index:1;text-align:center;margin-top:7px}.testbar button{border:1px solid #b94cff;border-radius:7px;background:rgba(65,20,95,.85);color:#fff;padding:5px 9px;font-size:11px;cursor:pointer;margin:0 2px}
+@media(max-width:500px){.card{padding:8px 9px 10px}.goal{padding:4px 7px}.row{gap:8px}.bar{height:12px}.toplist{grid-template-columns:1fr}}
+</style></head>
+<body><div class="wrap"><main class="card">
+  <div class="goal">เป้าหมาย : <span id="goalText">100,000</span> ใจ <button id="editGoal" title="แก้ไขเป้าหมาย">✎</button></div>
+  <div class="row"><div class="heart">♥</div><div class="count"><span id="current">0</span><span class="slash">/</span><span id="goalInline">100,000</span></div></div>
+  <div class="bar"><div class="fill" id="fill"></div></div>
+  <div class="testbar"><button id="testTop">🧪 จำลอง TOP 10</button><button id="testGoal">🎯 ทดลองถึงเป้า</button><button id="resetTest">↺ ล้างทดสอบ</button></div>
+  <section id="result"><h3>🎉 สุ่มผู้โชคดีจาก TOP 10 🎉</h3><div id="winner">กำลังสุ่ม...</div><div class="sub">รายชื่อผู้เคาะจอสูงสุด 10 อันดับ</div><div class="toplist" id="toplist"></div><div class="actions"><button id="reroll">สุ่มใหม่</button><button id="closeResult">ปิดหน้าต่าง</button></div><div class="note" id="resultNote"></div></section>
+</main></div>
+<script>
+const $=id=>document.getElementById(id);
+let goal=Number(localStorage.getItem('zen_goal')||100000),count=0,ws,retry,finished=false;
+const users=new Map();let lastTotal=null;let testMode=false;
+function fmt(n){return Math.max(0,Math.floor(n)).toLocaleString('en-US')}
+function render(){$('goalText').textContent=fmt(goal);$('goalInline').textContent=fmt(goal);$('current').textContent=fmt(count);$('fill').style.width=Math.min(100,goal?count/goal*100:0)+'%'}
+function getUser(d){let u=d.user||d;let name=u.nickname||u.displayName||u.uniqueId||u.username||u.userName||u.name||d.nickname||d.uniqueId||d.username||d.userName||d.displayName;let id=u.userId||u.uniqueId||u.secUid||u.id||name;if(!name)return null;return {id:String(id||name),name:String(name)}}
+function getLikeAmount(d){let n=d.likeCount??d.count??d.likes??d.totalLikes??1;n=Number(n);return Number.isFinite(n)&&n>0?Math.floor(n):1}
+function updateUser(d,amount){const u=getUser(d);if(!u)return;let old=users.get(u.id)||{name:u.name,count:0};old.name=u.name;old.count+=amount;users.set(u.id,old)}
+function sortedTop(){return [...users.values()].sort((a,b)=>b.count-a.count).slice(0,10)}
+function draw(){const top=sortedTop();if(!top.length){$('winner').textContent='ไม่พบชื่อผู้เคาะ';$('resultNote').textContent='TikFinity ยังไม่ส่งชื่อผู้ใช้มากับ Like Event';$('toplist').innerHTML='';return}const w=top[Math.floor(Math.random()*top.length)];$('winner').textContent='🏆 '+w.name;$('resultNote').textContent='สุ่มจากผู้เคาะจอ TOP '+top.length+' คน';$('toplist').innerHTML=top.map((u,i)=>`<div class="entry"><span>${i+1}. ${escapeHtml(u.name)}</span><b>${fmt(u.count)}</b></div>`).join('')}
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function finish(){if(finished)return;finished=true;$('result').style.display='block';draw()}
+function addLikes(d){if(finished)return;let amount=getLikeAmount(d);count+=amount;updateUser(d,amount);render();if(count>=goal){count=goal;render();finish()}}
+function onMessage(raw){let msg;try{msg=JSON.parse(raw)}catch{return}let ev=String(msg.event||msg.type||'').toLowerCase();let d=msg.data||msg;
+ if(ev==='like'||ev.includes('like')){if(d.totalLikes!=null&&!d.likeCount&&!d.count&&!d.likes){let t=Number(d.totalLikes);if(lastTotal!==null&&t>lastTotal)addLikes({...d,likeCount:t-lastTotal});lastTotal=t}else addLikes(d)}
+}
+function connect(){clearTimeout(retry);try{ws=new WebSocket('ws://localhost:21213/');ws.onmessage=e=>onMessage(e.data);ws.onclose=()=>retry=setTimeout(connect,3000);ws.onerror=()=>{};}catch(e){retry=setTimeout(connect,3000)}}
+$('editGoal').onclick=()=>{const v=prompt('ตั้งเป้าหมายหัวใจ',String(goal));if(v!==null){const n=Math.floor(Number(v.replace(/,/g,'')));if(n>0){goal=n;localStorage.setItem('zen_goal',goal);if(count>=goal)finish();render()}}};
+$('reroll').onclick=draw;$('closeResult').onclick=()=>$('result').style.display='none';
+$('testTop').onclick=()=>{testMode=true;finished=false;$('result').style.display='none';users.clear();const names=['ZEN_One','PlayerTwo','LuckyCat','Mild','Dragon','GamerX','Nana','Boss','Moon','Star'];names.forEach((name,i)=>users.set('demo'+i,{name,count:(10-i)*137}));count=[...users.values()].reduce((a,u)=>a+u.count,0);render();};
+$('testGoal').onclick=()=>{if(!users.size)$('testTop').click();testMode=true;count=goal;render();finish();};
+$('resetTest').onclick=()=>{testMode=false;finished=false;count=0;users.clear();lastTotal=null;$('result').style.display='none';render();};
+render();connect();
+</script></body></html>
